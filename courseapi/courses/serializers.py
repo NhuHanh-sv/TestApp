@@ -6,6 +6,8 @@ class ImageSerializer(serializers.ModelSerializer):
         ret = super().to_representation(instance)
         ret['image'] = instance.image.url
 
+        return ret
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -14,7 +16,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class CourseSerializer(ImageSerializer):
     class Meta:
         model = Course
-        fields = 'id', 'name', 'category' ,'description', 'created_date', 'image'
+        fields = 'id', 'name', 'category', 'created_date', 'image'
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:

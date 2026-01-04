@@ -20,24 +20,15 @@ class CourseView(viewsets.ViewSet, generics.ListAPIView):
 
     def get_queryset(self):
         query = self.queryset
-
         q = self.request.query_params.get('q')
+        print(q)
         if q:
             query = query.filter(name__icontains=q)
         cate_id = self.request.query_params.get('category_id')
         if cate_id:
             query = query.filter(category_id=cate_id)
-
-        sort_by = self.request.query_params.get('sort')
-        if sort_by == 'price_asc':
-            query = query.order_by('fee', 'id')
-        elif sort_by == 'price_desc':
-            query = query.order_by('-fee', 'id')
-        elif sort_by == 'name':
-            query = query.order_by('name', 'id')
-        else:
-            query = query.order_by('id')
-
+        print("final: ")
+        print (query)
         return query
 
     @action(methods=['get'], url_path='lessons', detail=True)

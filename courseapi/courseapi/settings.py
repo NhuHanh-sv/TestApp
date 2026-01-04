@@ -96,10 +96,14 @@ WSGI_APPLICATION = 'courseapi.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'coursesdb',
+        'NAME': 'test',
         'USER': 'root',
         'PASSWORD': '111111',
         'HOST': '',
+        'OPTIONS': {
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
+                    'charset': 'utf8mb4',
+        },
     }
 }
 
