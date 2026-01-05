@@ -28,10 +28,11 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(Teacher)
 class TeacherAdmin(UserAdmin):
-    # Cấu hình các trường hiển thị ở danh sách
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_verified')
 
-    # Cấu hình các nhóm trường khi bấm vào xem chi tiết/chỉnh sửa
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_verified')
+    list_editable = (
+        "is_verified",
+    )
 
     fieldsets = UserAdmin.fieldsets + (
         ('Thông tin Giảng viên', {'fields': ('bio', 'work_place')}),

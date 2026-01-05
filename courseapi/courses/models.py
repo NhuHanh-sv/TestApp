@@ -46,7 +46,6 @@ class Teacher(User):
 
 
 class Student(User):
-    """ Kế thừa từ User: Chứa thông tin Sinh viên """
     student_code = models.CharField(max_length=20, unique=True, blank=True)
     birth_date = models.DateField(null=True, blank=True)
 
@@ -54,12 +53,10 @@ class Student(User):
         self.role = User.Role.STUDENT
         if not self.student_code:
             year = datetime.datetime.now().year
-            # Tìm sinh viên cuối cùng được tạo trong năm nay
             last_student = Student.objects.filter(student_code__startswith=f"SV{year}").order_by(
                 "-student_code").first()
 
             if last_student:
-                # Lấy 4 số cuối của mã gần nhất, tăng thêm 1
                 last_number = int(last_student.student_code[-4:])
                 new_number = last_number + 1
             else:

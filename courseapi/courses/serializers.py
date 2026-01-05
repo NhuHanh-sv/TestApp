@@ -1,140 +1,163 @@
 from courses.models import Course, Category, Lesson, Tag, Teacher, Student, User
+from courses.models import Enrollment, Comment
 from rest_framework import serializers
 
-class ImageSerializer(serializers.ModelSerializer):
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        ret['image'] = instance.image.url
 
-        return ret
+class ImageSerializer(serializers.ModelSerializer):
+   def to_representation(self, instance):
+       ret = super().to_representation(instance)
+       ret['image'] = instance.image.url
+
+
+       return ret
+
 
 class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = 'id', 'name'
+   class Meta:
+       model = Category
+       fields = 'id', 'name'
+
 
 class CourseSerializer(ImageSerializer):
-    class Meta:
-        model = Course
-        fields = 'id', 'name', 'category', 'created_date', 'image'
+   class Meta:
+       model = Course
+       fields = 'id', 'name', 'category', 'created_date', 'image'
+
 
 class LessonSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Lesson
-        fields = 'id', 'subject', 'created_date'
+   class Meta:
+       model = Lesson
+       fields = 'id', 'subject', 'created_date'
+
 
 class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = '__all__'
+   class Meta:
+       model = Tag
+       fields = '__all__'
+
 
 class LessonDetailSerializer(LessonSerializer):
-    tags = TagSerializer(many=True)
-    class Meta:
-        model = LessonSerializer.Meta.model
-        fields = LessonSerializer.Meta.fields + ('tags','content')
+   tags = TagSerializer(many=True)
+   class Meta:
+       model = LessonSerializer.Meta.model
+       fields = LessonSerializer.Meta.fields + ('tags','content')
+
+
 
 
 class TeacherSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Teacher
-        fields = (
-            "bio",
-            "work_place",
-            "is_verified",
-        )
+   class Meta:
+       model = Teacher
+       fields = (
+           'bio',
+           'work_place',
+           'is_verified',
+       )
+       extra_kwargs = {
+           'is_verified': {'read_only': True},
+       }
+
+
 
 
 class StudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Student
-        fields = (
-            "student_code",
-            "birth_date",
-        )
+   class Meta:
+       model = Student
+       fields = (
+           'student_code',
+           'birth_date',
+       )
+       extra_kwargs = {
+           'student_code': {'read_only': True},
+       }
+
 
 
 
 class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = 'id', 'username', 'email', 'password', 'first_name', 'last_name', 'avatar', 'role'
-
-        extra_kwargs = {
-            'password': {
-                'write_only': True,
-            }
-        }
-
-    def create(self, validated_data):
-        t = Teacher(**validated_data)
-
-        t.set_password(t.password)
-        t.save()
-
-        return t
-
-    def get_extra(self, user):
-        # nếu là giảng viên
-        if user.role == User.Role.TEACHER:
-            try:
-                return TeacherSerializer(user.teacher).data
-            except Teacher.DoesNotExist:
-                return None
-
-        # nếu là sinh viên
-        if user.role == User.Role.STUDENT:
-            try:
-                return StudentSerializer(user.student).data
-            except Student.DoesNotExist:
-                return None
-
-        return None
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-
-        data['avatar'] = instance.avatar.url if instance.avatar else ''
-
-        return data
+   teacher = TeacherSerializer(required=False)
+   student = StudentSerializer(required=False)
 
 
-#
-# class TeacherSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Teacher
-#         fields = 'id','first_name', 'last_name', 'email', 'username', 'password'
-#
-#         extra_kwargs = {
-#             'password': {
-#                 'write_only': True,
-#             }
-#         }
-#     def create(self, validated_data):
-#         t = Teacher(**validated_data)
-#
-#         t.set_password(t.password)
-#         t.save()
-#
-#         return t
-#
-#
-#
-# class StudentSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Student
-#         fields = 'id', 'first_name', 'last_name', 'email', 'username', 'password', 'birth_date'
-#
-#         extra_kwargs = {
-#             'password': {
-#                 'write_only': True,
-#             }
-#         }
-#     def create(self, validated_data):
-#         s = Student(**validated_data)
-#         s.set_password(s.password)
-#         s.save()
-#         return s
-#
-#
+   class Meta:
+       model = User
+       fields = (
+           'id',
+           'username',
+           'email',
+           'password',
+           'first_name',
+           'last_name',
+           'role',
+           'avatar',
+           'teacher',
+           'student',
+       )
+
+
+       extra_kwargs = {
+           'password': {'write_only': True},
+       }
+
+
+   def create(self, validated_data):
+       role = validated_data.get("role")
+
+
+       teacher_data = validated_data.pop("teacher", {})
+       student_data = validated_data.pop("student", {})
+
+
+       if role == User.Role.STUDENT:
+           student = Student.objects.create_user(
+               username=validated_data["username"],
+               password=validated_data["password"],
+               email=validated_data.get("email"),
+               first_name=validated_data.get("first_name"),
+               last_name=validated_data.get("last_name"),
+               birth_date=student_data.get("birth_date"),
+           )
+           return student
+
+
+       if role == User.Role.TEACHER:
+           teacher = Teacher.objects.create_user(
+               username=validated_data["username"],
+               password=validated_data["password"],
+               email=validated_data.get("email"),
+               first_name=validated_data.get("first_name"),
+               last_name=validated_data.get("last_name"),
+               bio=teacher_data.get("bio"),
+               work_place=teacher_data.get("work_place"),
+               is_verified=False,
+           )
+           return teacher
+
+   def to_representation(self, instance):
+       data = super().to_representation(instance)
+
+       avatar = getattr(instance, 'avatar', None)
+       if hasattr(avatar, 'url'):
+           data['avatar'] = avatar.url
+       elif isinstance(avatar, str):
+           data['avatar'] = avatar
+       else:
+           data['avatar'] = ''
+
+       return data
+
+
+class CommentSerializer(serializers.ModelSerializer):
+   user = UserSerializer()
+   class Meta:
+       model = Comment
+       fields = ['id', 'content', 'created_date', 'user']
+
+
+
+
+class EnrollmentSerializer(serializers.ModelSerializer):
+   class Meta:
+       model = Enrollment
+       fields = ['id', 'course', 'student', 'created_date', 'progress', 'is_completed']
 
