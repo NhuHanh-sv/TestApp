@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.admin import UserAdmin
 from django.urls import path
 from django.utils.safestring import mark_safe
-from courses.models import Course, Category, Teacher, Lesson, Student, Tag
+from courses.models import Course, Category, Teacher, Lesson, Student, Tag, Comment, Like
 
 
 class LessonForm(forms.ModelForm):
@@ -62,6 +62,7 @@ class StudentAdmin(UserAdmin):
 class LessonAdmin(admin.ModelAdmin):
     form = LessonForm
 
+
 class MyAdminSite(admin.AdminSite):
     site_header = 'eCourseApp'
 
@@ -70,7 +71,9 @@ class MyAdminSite(admin.AdminSite):
     # def stats_view(self, request):
     #     pass
 
+
 admin_site = MyAdminSite()
+
 
 admin_site.register(Course, CourseAdmin)
 admin_site.register(Category)
@@ -78,3 +81,5 @@ admin_site.register(Teacher, TeacherAdmin)
 admin_site.register(Student, StudentAdmin)
 admin_site.register(Lesson)
 admin_site.register(Tag)
+admin_site.register(Comment)
+admin_site.register(Like)

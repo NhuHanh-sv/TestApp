@@ -1,18 +1,12 @@
-
-
-
-
 from django.contrib.admindocs.utils import parse_rst
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, generics, status, parsers, permissions
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-
-from courses import serializers, paginators
-
-
-from courses.models import Category, Course, Lesson, Teacher, Student, User
+from courses import serializers, paginators, perms
+from courses.models import Category, Course, Lesson, User, Comment, Like, Enrollment, Teacher
 from courses.paginators import ItemPagination
 
 
@@ -28,7 +22,6 @@ class CourseView(viewsets.ViewSet, generics.ListAPIView):
    serializer_class = serializers.CourseSerializer
    pagination_class = ItemPagination
 
-
    def get_queryset(self):
        query = self.queryset
        q = self.request.query_params.get('q')
@@ -39,21 +32,70 @@ class CourseView(viewsets.ViewSet, generics.ListAPIView):
            query = query.filter(category_id=cate_id)
        return query
 
-
    @action(methods=['get'], url_path='lessons', detail=True)
    def get_lessons(self, request, pk):
            lessons = self.get_object().lessons.filter(active=True)
-
-
            return Response(serializers.LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
 
+   @action(methods=['post'], url_path='enroll', detail=True, permission_classes=[permissions.IsAuthenticated])
+   def enroll(self, request, pk):
+       course = self.get_object()
+       user = request.user
+
+       student = user.student
+       enrollment, created = Enrollment.objects.get_or_create(
+           student=student,
+           course=course
+       )
+
+       if not created:
+           return Response({"detail": "Bạn đã đăng ký khóa học này rồi."},status=status.HTTP_400_BAD_REQUEST)
+
+       return Response(serializers.EnrollmentSerializer(enrollment).data,status=status.HTTP_201_CREATED)
 
 
 
 class LessonView(viewsets.ViewSet, generics.RetrieveAPIView):
-   queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
-   serializer_class = serializers.LessonDetailSerializer
+    queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
+    serializer_class = serializers.LessonDetailSerializer
 
+    def get_permissions(self):
+       if self.request.method.__eq__('POST'):
+           return [permissions.IsAuthenticated()]
+       return [permissions.AllowAny()]
+
+    @action(methods=['get', 'post'], url_path='comments', detail=True)
+    def get_comments(self, request, pk):
+        if request.method.__eq__('POST'):
+            s = serializers.CommentSerializer(data={
+                'content': request.data.get('content'),
+                'user': self.request.user.pk,
+                'lesson': pk
+            })
+            s.is_valid(raise_exception=True)
+            c = s.save()
+            return Response(serializers.CommentSerializer(c).data, status=status.HTTP_201_CREATED)
+
+        comments = self.get_object().comment_set.select_related('user').filter(active=True)
+
+        p = paginators.CommentPaginator()
+        page = p.paginate_queryset(comments, self.request)
+        if page is not None:
+            serializer = serializers.CommentSerializer(page, many=True)
+            return p.get_paginated_response(serializer.data)
+
+        return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], url_path='likes', detail=True)
+    def get_like(self, request, pk):
+        if request.method.__eq__('POST'):
+            s = serializers.LikeSerializer(data={
+                'user': self.request.user.pk,
+            })
+            s.is_valid(raise_exception=True)
+            like = s.save()
+            return Response(serializers.LikeSerializer(like).data, status=status.HTTP_200_OK)
+        return Response(serializers.LikeSerializer(request).data, status=status.HTTP_200_OK)
 
 
 
@@ -78,4 +120,34 @@ class UserView(viewsets.ViewSet, generics.CreateAPIView):
            return Response(serializer.data, status=status.HTTP_200_OK)
 
        return Response(serializers.UserSerializer(u).data, status=status.HTTP_200_OK)
+
+   @action(methods=['get'], url_path='my-courses', detail=False,permission_classes=[permissions.IsAuthenticated])
+   def my_courses(self, request):
+       user = request.user
+       if user.role != User.Role.STUDENT:
+           courses = Course.objects.filter(instructor=user.teacher, active=True)
+           serializer = serializers.CourseSerializer(courses, many=True)
+           return Response(serializer.data, status=status.HTTP_200_OK)
+       else:
+           enrollments = Enrollment.objects.filter(student=user.student)
+           serializer = serializers.EnrollmentSerializer(enrollments, many=True)
+           return Response(serializer.data)
+
+   @action(methods=['get'], url_path='verified-teachers', detail=False)
+   def get_verified_teachers(self, request):
+       teachers = Teacher.objects.filter(is_verified=True, is_active=True)
+       page = PageNumberPagination()
+       page = self.paginate_queryset(teachers)
+       if page is not None:
+           serializer = serializers.UserSerializer(page, many=True)
+           return self.get_paginated_response(serializer.data)
+
+       serializer = serializers.UserSerializer(teachers, many=True)
+       return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CommentView(viewsets.ViewSet, generics.DestroyAPIView):
+    queryset = Comment.objects.filter(active=True)
+    serializer_class = serializers.CommentSerializer
+    permission_classes = [perms.CommentOwner]
 

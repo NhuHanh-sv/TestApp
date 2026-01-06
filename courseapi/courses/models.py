@@ -133,26 +133,30 @@ class Lesson(BaseModel):
     class Meta:
         unique_together = ('subject', 'course')
 
+    @property
+    def like_count(self):
+        return self.like_set.filter(active=True).count()
+
 
 # ==========================================================
 # 3. TƯƠNG TÁC KẾ THỪA
 # ==========================================================
 
 class Interaction(BaseModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=False, blank = False)
     class Meta:
         abstract = True
-
 
 class Comment(Interaction):
     content = models.TextField()
 
+    def __str__(self):
+        return self.content
 
 class Like(Interaction):
     class Meta:
-        unique_together = ('user', 'course')
+        unique_together = ('user', 'lesson')
 
 
 class Rating(Interaction):
