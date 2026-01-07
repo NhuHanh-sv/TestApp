@@ -1,5 +1,5 @@
 from courses.models import Course, Category, Lesson, Tag, Teacher, Student, User, Like
-from courses.models import Enrollment, Comment
+from courses.models import Enrollment, Comment, Transaction
 from rest_framework import serializers
 import json
 
@@ -22,22 +22,26 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(ImageSerializer):
+    tags = TagSerializer(many=True, read_only=True)
     class Meta:
         model = Course
-        fields = 'id', 'name', 'category', 'created_date', 'image'
+        fields = 'id', 'name', 'category', 'created_date', 'image', 'tags'
+
+class CourseCreateSerializer(CourseSerializer):
+    tags = serializers.PrimaryKeyRelatedField(many=True,queryset=Tag.objects.all(), required=False)
+
+    class Meta(CourseSerializer.Meta):
+        pass
+
 
 
 class LessonSerializer(serializers.ModelSerializer):
-    like_count = serializers.ReadOnlyField()
-    is_liked = serializers.SerializerMethodField()
-
     class Meta:
         model = Lesson
         fields = 'id', 'subject', 'created_date'
 
 
 class LessonDetailSerializer(LessonSerializer):
-
     tags = TagSerializer(many=True)
     class Meta:
         model = LessonSerializer.Meta.model
@@ -141,13 +145,13 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         if instance.role == User.Role.TEACHER:
-            teacher_data = validated_data.get('teacher')
+            teacher_data = validated_data.pop('teacher', None)
             if teacher_data and hasattr(instance, 'teacher'):
                 serializer = TeacherSerializer(instance.teacher, data=teacher_data, partial=True)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-        if instance.role == User.Role.STUDENT:
+        elif instance.role == User.Role.STUDENT:
             student_data = validated_data.get('student')
             if student_data and hasattr(instance, 'student'):
                 serializer = StudentSerializer(instance.student, data=student_data, partial=True)
@@ -211,4 +215,10 @@ class EnrollmentSerializer(serializers.ModelSerializer):
    class Meta:
        model = Enrollment
        fields = ['id', 'course', 'student', 'created_date', 'progress', 'is_completed']
+
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = '__all__'
 

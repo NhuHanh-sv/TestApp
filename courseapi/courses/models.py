@@ -72,7 +72,6 @@ class Student(User):
 class AdminProfile(User):
     """ Kế thừa từ User: Chứa thông tin Quản trị viên """
     access_level = models.IntegerField(default=1)
-
     class Meta:
         verbose_name = "Quản trị viên"
 
@@ -144,11 +143,15 @@ class Lesson(BaseModel):
 
 class Interaction(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=False, blank = False)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=False, blank=False)
+
     class Meta:
         abstract = True
 
+
 class Comment(Interaction):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=False, blank=False)
     content = models.TextField()
 
     def __str__(self):
@@ -156,7 +159,7 @@ class Comment(Interaction):
 
 class Like(Interaction):
     class Meta:
-        unique_together = ('user', 'lesson')
+        unique_together = ('user', 'course')
 
 
 class Rating(Interaction):
@@ -180,5 +183,5 @@ class Enrollment(BaseModel):
 class Transaction(BaseModel):
     enrollment = models.OneToOneField(Enrollment, on_delete=models.CASCADE, related_name='payment')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    pay_method = models.CharField(max_length=50)  # Momo, ZaloPay, PayPal...
+    pay_method = models.CharField(max_length=50)
     status = models.BooleanField(default=False)

@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-o=y&&8ycu(4w=@%(2mbfeh519whzo%%z8)=t&=n0)s+p6(k4_u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['nhuhanh17.pythonanywhere.com',  '127.0.0.1' ]
 
 
 # Application definition
@@ -99,6 +99,9 @@ WSGI_APPLICATION = 'courseapi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -112,6 +115,22 @@ DATABASES = {
         },
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'Nhuhanh17$coursesdb',
+#         'USER': 'Nhuhanh17',
+#         'PASSWORD': 'Baitaplon17',
+#         'HOST': 'Nhuhanh17.mysql.pythonanywhere-services.com',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES', NAMES 'utf8mb4'",
+#         },
+#     }
+# }
+
+
 
 import pymysql
 pymysql.install_as_MySQLdb()

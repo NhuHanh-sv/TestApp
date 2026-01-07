@@ -30,7 +30,12 @@ class CourseView(viewsets.ViewSet, generics.ListAPIView):
        cate_id = self.request.query_params.get('category_id')
        if cate_id:
            query = query.filter(category_id=cate_id)
-       return query
+
+       tag_id = self.request.query_params.get('tag_id')
+       if tag_id:
+           query = query.filter(tags__id=tag_id)
+
+       return query.distinct()
 
    @action(methods=['get'], url_path='lessons', detail=True)
    def get_lessons(self, request, pk):
@@ -113,6 +118,7 @@ class UserView(viewsets.ViewSet, generics.CreateAPIView):
    @action(methods=['get','patch' ], url_path='current-user', detail=False, permission_classes=[permissions.IsAuthenticated])
    def get_current_user(self, request):
        u = request.user
+       print(request.data)
        if request.method == 'PATCH':
            serializer = serializers.UserSerializer(u, data=request.data, partial=True)
            serializer.is_valid(raise_exception=True)
@@ -144,6 +150,10 @@ class UserView(viewsets.ViewSet, generics.CreateAPIView):
 
        serializer = serializers.UserSerializer(teachers, many=True)
        return Response(serializer.data, status=status.HTTP_200_OK)
+
+   @action(methods=['get'], url_path='all-user', detail=False)
+   def get_all_users(self, request):
+       return Response(serializers.UserSerializer(User.objects.all(), many=True).data, status=status.HTTP_200_OK)
 
 
 class CommentView(viewsets.ViewSet, generics.DestroyAPIView):

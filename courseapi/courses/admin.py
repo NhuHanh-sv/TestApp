@@ -16,7 +16,7 @@ class LessonForm(forms.ModelForm):
 
 
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'duration', 'fee', 'instructor', )
+    list_display = ('name', 'category', 'duration', 'fee', 'instructor' )
     list_filter = ('category', 'instructor','fee')
     search_fields = ('name',)
     readonly_fields = ('image_view',)
@@ -79,7 +79,7 @@ admin_site.register(Course, CourseAdmin)
 admin_site.register(Category)
 admin_site.register(Teacher, TeacherAdmin)
 admin_site.register(Student, StudentAdmin)
-admin_site.register(Lesson)
+admin_site.register(Lesson, LessonAdmin)
 admin_site.register(Tag)
 admin_site.register(Comment)
 admin_site.register(Like)
